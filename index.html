@@ -22,6 +22,10 @@
             color: #e0e0e0;
         }
 
+        body.resizing {
+            user-select: none;
+        }
+
         .hidden {
             display: none;
         }
@@ -118,14 +122,51 @@
         .main-content {
             flex-grow: 1;
             height: 100%;
-            overflow-y: auto;
+            overflow: hidden;
         }
 
         .view {
             height: 100%;
         }
 
-        #project-view {background-color: #262626;}
+        #project-view {
+            background-color: #262626;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #project-view.show-grid {
+            --grid-color-light: rgba(255, 255, 255, 0.05);
+            --grid-color-dark: rgba(255, 255, 255, 0.1);
+            background-image:
+                linear-gradient(to right, var(--grid-color-light) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color-light) 1px, transparent 1px),
+                linear-gradient(to right, var(--grid-color-dark) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color-dark) 1px, transparent 1px);
+            background-repeat: repeat;
+        }
+
+        #project-view.cursor-hand {
+            cursor: url('hand.svg') 12 12, grab;
+        }
+
+        #project-view.cursor-hand.panning {
+            cursor: grabbing;
+        }
+
+        #project-view.cursor-crosshair {
+            cursor: crosshair;
+        }
+
+        #canvas-container {
+            position: absolute;
+            left: -50000px;
+            top: -50000px;
+            width: 100000px;
+            height: 100000px;
+            transform-origin: 0 0;
+        }
+
         .projects-grid {
             display: flex;
             flex-wrap: wrap;
@@ -205,6 +246,7 @@
             background-color: #2C2C2C;
             border-bottom: 1px solid #444;
             padding: 0;
+            z-index: 100;
             display: flex;
         }
 
@@ -413,6 +455,201 @@
             background-color: #5f5f5f;
         }
 
+        .bottom-panel {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #3a3a3a;
+            border: 1px solid #444;
+            border-radius: 22px;
+            width: 700px;
+            height: 56px;
+            padding: 0 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            z-index: 100;
+        }
+
+        .panel-tool-button {
+            width: 40px;
+            height: 40px;
+            padding: 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .panel-tool-button:hover {
+            background-color: #555;
+        }
+
+        #frame-tool-button {
+            width: 36px;
+            height: 36px;
+        }
+
+        .tool-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tool-group.active-group .panel-tool-button {
+            background-color: #4a4a4a;
+        }
+
+        .panel-tool-button.active {
+            background-color: #61afef;
+        }
+
+        .tool-group .tool-arrow {
+            width: 16px;
+            height: 16px;
+            opacity: 0.7;
+            cursor: pointer;
+            padding: 4px;
+            box-sizing: content-box;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .tool-dropdown {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 0;
+            background-color: #2C2C2C;
+            border: 1px solid #444;
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+            width: 200px;
+            padding: 5px;
+        }
+
+        .tool-group .tool-arrow:hover {
+            background-color: #555;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .dropdown-item img {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .dropdown-separator {
+            height: 1px;
+            background-color: #444;
+            margin: 4px 0;
+        }
+
+        .dropdown-item:hover, .dropdown-item.active {
+            background-color: #3a3a3a;
+        }
+
+        .dropdown-item .tool-name {
+            flex-grow: 1;
+        }
+
+        .hotkey-hint {
+            background-color: #4a4a4a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #b0b0b0;
+            font-family: "SF Mono", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", monospace;
+        }
+
+        .tool-separator {
+            width: 1px;
+            height: 24px;
+            background-color: #555;
+            margin: 0 4px;
+        }
+
+        .created-frame {
+            position: absolute;
+            background-color: white;
+            z-index: 1;
+        }
+
+        .frame-creation-preview {
+            position: absolute;
+            border: 1px solid #61afef;
+            background-color: rgba(97, 175, 239, 0.2);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .created-frame.selected {
+            outline: 2px solid #61afef;
+        }
+
+        .created-frame.nested-frame { 
+            box-shadow: none;
+        }
+
+        .frame-label {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #a6d1ff;
+            white-space: nowrap;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border: 1px solid #61afef;
+            z-index: 2;
+            display: none;
+        }
+
+        .created-frame.selected .resize-handle {
+            display: block;
+        }
+
+        .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+        .handle-n  { top: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+        .handle-w  { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
+        .handle-e  { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
+        .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .handle-s  { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+        .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+
+        .frame-label-edit {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #fff;
+            background-color: #262626;
+            border: 1px solid #61afef;
+            border-radius: 2px;
+            outline: none;
+            padding: 1px 3px;
+            width: 100px;
+            font-family: sans-serif;
+        }
+
+
     </style>
 </head>
 <body>
@@ -462,6 +699,28 @@
             </div>
         </div>
         <div id="project-view" class="view hidden">
+            <div id="canvas-container"></div>
+            <div class="bottom-panel">
+                <div class="tool-group" id="select-tool-group">
+                    <img src="move.svg" class="panel-tool-button" id="active-tool-icon" alt="Active Tool">
+                    <img src="arrow.svg" class="tool-arrow" alt="Select Tool">
+                    <div class="tool-dropdown hidden" id="tool-select-dropdown">
+                        <div class="dropdown-item active" data-tool="move" data-icon="move.svg">
+                            <img src="move.svg" alt="Move">
+                            <span class="tool-name">Move</span>
+                            <kbd class="hotkey-hint">V</kbd>
+                        </div>
+                        <div class="dropdown-separator"></div>
+                        <div class="dropdown-item" data-tool="hand" data-icon="hand.svg">
+                            <img src="hand.svg" alt="Hand Tool">
+                            <span class="tool-name">Hand tool</span>
+                            <kbd class="hotkey-hint">H</kbd>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-separator"></div>
+                <img src="frame.svg" class="panel-tool-button" id="frame-tool-button" alt="Frame Tool">
+            </div>
         </div>
     </div>
 
@@ -546,6 +805,10 @@
             const projectView = document.getElementById('project-view');
             const sidebar = document.querySelector('.sidebar');
             const sidebarContent = document.getElementById('sidebar-content');
+            const canvasContainer = document.getElementById('canvas-container');
+            const CANVAS_OFFSET = 50000; 
+            let canvasState = { scale: 1, offsetX: 0, offsetY: 0 };
+            
 
             function switchToHomeView() {
                 homeView.classList.remove('hidden');
@@ -554,6 +817,7 @@
                 document.querySelectorAll('.project-tab').forEach(tab => tab.classList.remove('active'));
 
                 sidebarContent.classList.remove('hidden');
+                projectView.classList.remove('cursor-hand'); 
             }
 
             function switchToProjectView(tab) {
@@ -565,6 +829,12 @@
 
                 sidebar.classList.add('wide');
                 sidebarContent.classList.add('hidden');
+
+                applyCanvasTransform(); 
+
+                if (activeTool === 'hand') {
+                    projectView.classList.add('cursor-hand');
+                }
             }
 
             homeButton.addEventListener('click', switchToHomeView);
@@ -627,6 +897,441 @@
                     switchToHomeView();
                 });
             });
+
+            let activeTool = 'move';
+            const toolGroup = document.getElementById('select-tool-group');
+            let history = [];
+            let historyIndex = -1;
+            let frameCounter = 0;
+            let selectedElement = null;
+
+            let isPanning = false;
+            let lastPanPosition = {};
+
+            let isDragging = false;
+            let initialDragState = {};
+
+            let isDrawingFrame = false;
+            let startX, startY;
+            let previewFrame = null;
+
+            let isResizing = false;
+            let resizeHandleType = null;
+            let initialFrameRect = {};
+            let initialMousePos = {};
+
+            const GRID_VISIBILITY_THRESHOLD = 1.5; 
+
+            function updateGrid() {
+                if (canvasState.scale > GRID_VISIBILITY_THRESHOLD) {
+                    projectView.classList.add('show-grid');
+                    const smallGridSize = 10 * canvasState.scale;
+                    const largeGridSize = 100 * canvasState.scale;
+                    const viewBgSize = `${smallGridSize}px ${smallGridSize}px, ${smallGridSize}px ${smallGridSize}px, ${largeGridSize}px ${largeGridSize}px, ${largeGridSize}px ${largeGridSize}px`;
+                    const viewBgPos = `${canvasState.offsetX}px ${canvasState.offsetY}px, ${canvasState.offsetX}px ${canvasState.offsetY}px, ${canvasState.offsetX}px ${canvasState.offsetY}px, ${canvasState.offsetX}px ${canvasState.offsetY}px`;
+                    projectView.style.backgroundSize = viewBgSize;
+                    projectView.style.backgroundPosition = viewBgPos;
+                } else {
+                    projectView.classList.remove('show-grid');
+                }
+            }
+
+            function applyCanvasTransform() {
+                canvasContainer.style.transform = `translate(${CANVAS_OFFSET + canvasState.offsetX}px, ${CANVAS_OFFSET + canvasState.offsetY}px) scale(${canvasState.scale})`;
+                updateGrid();
+            }
+
+            function zoomCanvas(direction) {
+                const rect = projectView.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const zoomSensitivity = 0.2;
+                const scaleAmount = 1 + direction * zoomSensitivity;
+                const newScale = Math.max(0.2, Math.min(canvasState.scale * scaleAmount, 5));
+                canvasState.offsetX = centerX - (centerX - canvasState.offsetX) * (newScale / canvasState.scale);
+                canvasState.offsetY = centerY - (centerY - canvasState.offsetY) * (newScale / canvasState.scale);
+                canvasState.scale = newScale;
+                applyCanvasTransform();
+            }
+
+            if (toolGroup) {
+                const toolDropdown = document.getElementById('tool-select-dropdown');
+                const activeToolIcon = document.getElementById('active-tool-icon');
+                const dropdownItems = toolDropdown.querySelectorAll('.dropdown-item');
+                const arrowIcon = toolGroup.querySelector('.tool-arrow');
+                const frameButton = document.getElementById('frame-tool-button');
+
+                function setActiveTool(toolName) {
+                    activeTool = toolName;
+
+                    selectElement(null); 
+                    toolGroup.classList.remove('active-group');
+                    activeToolIcon.classList.remove('active');
+                    frameButton.classList.remove('active');
+                    projectView.classList.remove('cursor-hand', 'cursor-crosshair');
+
+                    if (toolName === 'move' || toolName === 'hand') {
+                        toolGroup.classList.add('active-group');
+                        activeToolIcon.classList.add('active');
+                        const toolElement = toolDropdown.querySelector(`[data-tool="${toolName}"]`);
+                        if (!toolElement) return;
+
+                        dropdownItems.forEach(i => i.classList.remove('active'));
+                        toolElement.classList.add('active');
+
+                        activeToolIcon.src = toolElement.dataset.icon;
+
+                        if (toolName === 'hand') {
+                            projectView.classList.add('cursor-hand');
+                        }
+                    } else if (toolName === 'frame') {
+                        frameButton.classList.add('active');
+                        projectView.classList.add('cursor-crosshair');
+                    }
+                }
+
+                setActiveTool('move');
+
+                function selectElement(element) {
+                    if (selectedElement) {
+                        selectedElement.classList.remove('selected');
+                    }
+                    selectedElement = element;
+                    if (selectedElement) {
+                        selectedElement.classList.add('selected');
+                    }
+                }
+
+
+                function addHistoryAction(action) {
+                    history.splice(historyIndex + 1);
+                    history.push(action);
+                    historyIndex++;
+                }
+
+                function undo() { 
+                    if (historyIndex < 0) return;
+                    const action = history[historyIndex];
+                    if (action.type === 'add') {
+                        action.element.remove();
+                    }
+                    else if (action.type === 'delete') {
+                        action.parent.insertBefore(action.element, action.nextSibling);
+                    }
+                    historyIndex--;
+                }
+
+                function redo() { 
+                    if (historyIndex >= history.length - 1) return;
+                    historyIndex++;
+                    const action = history[historyIndex];
+                    if (action.type === 'add') {
+                        canvasContainer.appendChild(action.element);
+                    }
+                    else if (action.type === 'delete') {
+                        action.element.remove();
+                    }
+                }
+
+                arrowIcon.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toolDropdown.classList.toggle('hidden');
+                });
+
+                dropdownItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        setActiveTool(item.dataset.tool);
+                        toolDropdown.classList.add('hidden');
+                    });
+                });
+
+                frameButton.addEventListener('click', () => {
+                    setActiveTool('frame');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!toolGroup.contains(e.target) && !toolDropdown.classList.contains('hidden')) {
+                        toolDropdown.classList.add('hidden');
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (projectView.classList.contains('hidden') || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || modalOverlay.classList.contains('visible')) {
+                        return;
+                    }
+
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElement) {
+                        e.preventDefault();
+                        const elementToDelete = selectedElement;
+                        addHistoryAction({ 
+                            type: 'delete', 
+                            element: elementToDelete, 
+                            parent: elementToDelete.parentElement,
+                            nextSibling: elementToDelete.nextSibling
+                        });
+                        elementToDelete.remove();
+                        selectElement(null);
+                        return;
+                    }
+
+                    if (e.ctrlKey || e.metaKey) {
+                        if (e.code === 'KeyZ') {
+                            e.preventDefault();
+                            undo();
+                            return;
+                        }
+                        if (e.code === 'KeyY') {
+                            e.preventDefault();
+                            redo();
+                            return;
+                        }
+
+                        if (e.code === 'Equal' || e.code === 'NumpadAdd') {
+                            e.preventDefault();
+                            zoomCanvas(1);
+                        }
+                        if (e.code === 'Minus' || e.code === 'NumpadSubtract') {
+                            e.preventDefault();
+                            zoomCanvas(-1);
+                        }
+                    }
+
+                    if (e.code === 'KeyV') setActiveTool('move');
+                    else if (e.code === 'KeyH') setActiveTool('hand');
+                    else if (e.code === 'KeyF') setActiveTool('frame');
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isPanning) {
+                        const dx = e.clientX - lastPanPosition.x;
+                        const dy = e.clientY - lastPanPosition.y;
+                        canvasState.offsetX += dx;
+                        canvasState.offsetY += dy;
+                        applyCanvasTransform();
+                        lastPanPosition = { x: e.clientX, y: e.clientY };
+                        return; 
+                    }
+
+                    if (isDrawingFrame) {
+                        const rect = projectView.getBoundingClientRect();
+                        const relativeCurrentX = e.clientX - rect.left;
+                        const relativeCurrentY = e.clientY - rect.top;
+                        const relativeStartX = parseFloat(previewFrame.dataset.startX);
+                        const relativeStartY = parseFloat(previewFrame.dataset.startY);
+                        previewFrame.style.width = `${Math.abs(relativeCurrentX - relativeStartX)}px`;
+                        previewFrame.style.height = `${Math.abs(relativeCurrentY - relativeStartY)}px`;
+                        previewFrame.style.left = `${Math.min(relativeCurrentX, relativeStartX)}px`;
+                        previewFrame.style.top = `${Math.min(relativeCurrentY, relativeStartY)}px`;
+                    } else if (isDragging) {
+                        const dx = (e.clientX - initialDragState.startX) / canvasState.scale;
+                        const dy = (e.clientY - initialDragState.startY) / canvasState.scale;
+                        
+                        let newLeft = initialDragState.initialLeft + dx;
+                        let newTop = initialDragState.initialTop + dy;
+
+                        initialDragState.element.style.left = `${newLeft}px`;
+                        initialDragState.element.style.top = `${newTop}px`;
+                    } else if (isResizing) {
+                        const dx = (e.clientX - initialMousePos.x) / canvasState.scale;
+                        const dy = (e.clientY - initialMousePos.y) / canvasState.scale;
+
+                        let { left, top, width, height } = initialFrameRect;
+
+                        if (resizeHandleType.includes('e')) width += dx;
+                        if (resizeHandleType.includes('w')) { width -= dx; left += dx; }
+                        if (resizeHandleType.includes('s')) height += dy;
+                        if (resizeHandleType.includes('n')) { height -= dy; top += dy; }
+
+                        if (width > 10) {
+                            selectedElement.style.width = `${width}px`;
+                            selectedElement.style.left = `${left}px`;
+                        }
+                        if (height > 10) {
+                            selectedElement.style.height = `${height}px`;
+                            selectedElement.style.top = `${top}px`;
+                        }
+                    }
+                });
+
+                document.addEventListener('mouseup', (e) => {
+                    if (isPanning) { 
+                        isPanning = false;
+                        projectView.classList.remove('panning');
+                    }
+
+                    if (isDrawingFrame) {
+                        isDrawingFrame = false;
+                        const finalWidth = parseFloat(previewFrame.style.width);
+                        const finalHeight = parseFloat(previewFrame.style.height);
+                        
+                        if (finalWidth > 5 && finalHeight > 5) {
+                            const viewX = parseFloat(previewFrame.style.left);
+                            const viewY = parseFloat(previewFrame.style.top);
+
+                            const finalX = (viewX - canvasState.offsetX) / canvasState.scale;
+                            const finalY = (viewY - canvasState.offsetY) / canvasState.scale;
+                            const scaledWidth = finalWidth / canvasState.scale;
+                            const scaledHeight = finalHeight / canvasState.scale;
+                            
+                            const newFrame = createAndAppendFrame(
+                                finalX,
+                                finalY,
+                                scaledWidth,
+                                scaledHeight
+                            );
+                            addHistoryAction({ type: 'add', element: newFrame });
+                            selectElement(newFrame);
+                        }
+                        projectView.removeChild(previewFrame);
+                        previewFrame = null;
+                        setActiveTool('move');
+                    }
+                    if (isResizing) {
+                        isResizing = false;
+                        document.body.classList.remove('resizing');
+                    }
+                    if (isDragging) {
+                        isDragging = false;
+                    }
+                });
+
+                function createAndAppendFrame(x, y, width, height) { 
+                    frameCounter++;
+                    const frame = document.createElement('div');
+                    frame.className = 'created-frame';
+                    frame.style.cssText = `left: ${x}px; top: ${y}px; width: ${width}px; height: ${height}px;`;
+
+                    const label = document.createElement('div');
+                    label.className = 'frame-label';
+                    label.textContent = `Frame ${frameCounter}`;
+                    frame.appendChild(label);
+
+                    label.addEventListener('dblclick', (e) => {
+                        e.stopPropagation();
+                        const currentName = label.textContent;
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'frame-label-edit';
+                        input.value = currentName;
+
+                        label.style.display = 'none';
+                        frame.appendChild(input);
+                        input.focus();
+                        input.select();
+
+                        const finishEditing = () => {
+                            const newName = input.value.trim();
+                            if (newName) label.textContent = newName;
+                            if (frame.contains(input)) frame.removeChild(input);
+                            label.style.display = 'block';
+                        };
+
+                        input.addEventListener('blur', finishEditing);
+                        input.addEventListener('keydown', (keyEvent) => {
+                            if (keyEvent.key === 'Enter') finishEditing();
+                            else if (keyEvent.key === 'Escape') { input.value = currentName; finishEditing(); }
+                        });
+                    });
+
+                    ['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se'].forEach(type => {
+                        const handle = document.createElement('div');
+                        handle.className = `resize-handle handle-${type}`;
+                        handle.dataset.type = type;
+                        frame.appendChild(handle);
+
+                        handle.addEventListener('mousedown', (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            document.body.classList.add('resizing');
+                            isResizing = true;
+                            resizeHandleType = type;
+                            
+                            initialFrameRect = {
+                                left: parseFloat(frame.style.left) || 0,
+                                top: parseFloat(frame.style.top) || 0,
+                                width: parseFloat(frame.style.width) || 0,
+                                height: parseFloat(frame.style.height) || 0
+                            };
+                            initialMousePos = { x: e.clientX, y: e.clientY };
+                        });
+                    });
+
+                    canvasContainer.appendChild(frame);
+                    return frame;
+                }
+
+                projectView.addEventListener('mousedown', (e) => { 
+                    if (activeTool === 'hand') {
+                        isPanning = true;
+                        lastPanPosition = { x: e.clientX, y: e.clientY };
+                        projectView.classList.add('panning');
+                        e.preventDefault();
+                        return;
+                    }
+
+                    const clickedOnFrame = e.target.closest('.created-frame');
+                    const clickedOnHandle = e.target.classList.contains('resize-handle');
+
+                    if (e.target === projectView) {
+                        selectElement(null);
+                    }
+
+                    if (activeTool === 'move' && !clickedOnHandle) {
+                        selectElement(clickedOnFrame);
+                        if (clickedOnFrame) {
+                            isDragging = true;
+                            initialDragState = {
+                                startX: e.clientX,
+                                startY: e.clientY,
+                                initialLeft: parseFloat(clickedOnFrame.style.left) || 0,
+                                initialTop: parseFloat(clickedOnFrame.style.top) || 0,
+                                element: clickedOnFrame
+                            };
+                            e.preventDefault();
+                        }
+                    }
+
+                    if (activeTool === 'frame' && !e.target.closest('.bottom-panel') && !clickedOnHandle) {
+                        isDrawingFrame = true;
+                        const rect = projectView.getBoundingClientRect();
+                        const relativeStartX = e.clientX - rect.left;
+                        const relativeStartY = e.clientY - rect.top;
+
+                        previewFrame = document.createElement('div');
+                        previewFrame.className = 'frame-creation-preview';
+                        previewFrame.style.left = `${relativeStartX}px`;
+                        previewFrame.style.top = `${relativeStartY}px`;
+                        previewFrame.dataset.startX = relativeStartX;
+                        previewFrame.dataset.startY = relativeStartY;
+                        projectView.appendChild(previewFrame);
+
+                        e.preventDefault();
+                    }
+                });
+
+                projectView.addEventListener('wheel', (e) => {
+                    if (!e.ctrlKey) return;
+                    e.preventDefault();
+
+                    const rect = projectView.getBoundingClientRect();
+                    const mouseX = e.clientX - rect.left;
+                    const mouseY = e.clientY - rect.top;
+
+                    const zoomSensitivity = 0.1;
+                    const delta = e.deltaY > 0 ? -1 : 1;
+                    const scaleAmount = 1 + delta * zoomSensitivity;
+
+                    const newScale = Math.max(0.2, Math.min(canvasState.scale * scaleAmount, 5));
+
+                    canvasState.offsetX = mouseX - (mouseX - canvasState.offsetX) * (newScale / canvasState.scale);
+                    canvasState.offsetY = mouseY - (mouseY - canvasState.offsetY) * (newScale / canvasState.scale);
+                    canvasState.scale = newScale;
+
+                    applyCanvasTransform();
+                }, { passive: false });
+
+                applyCanvasTransform(); 
+            }
         });
     </script>
 </body>
